@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal Pengumpulan Hasil PH</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f7ff',
+                            100: '#e0effe',
+                            500: '#2563eb',
+                            600: '#1d4ed8',
+                            700: '#1e40af',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        /* Custom scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        .drag-active {
+            border-color: #2563eb !important;
+            background-color: #eff6ff !important;
+        }
+    </style>
+</head>
+<body class="min-h-screen text-slate-800 flex flex-col bg-slate-50">
+
+    <!-- Navigation Bar -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <!-- Logo & Portal Title -->
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-600 flex items-center flex-shrink-0 justify-center text-white shadow-md shadow-brand-500/20">
+                        <i class="fa-solid me-0 fa-file-invoice text-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-slate-900 text-base sm:text-lg leading-tight">EduUpload PH</h1>
+                        <p class="text-xs text-slate-500 hidden sm:block">Portal Pengumpulan Hasil Penilaian Harian Siswa</p>
+                    </div>
+                </div>
+
+                <!-- Navigation Tabs (Siswa / Guru View Switcher) -->
+                <div class="flex bg-slate-100 p-1 rounded-xl text-sm font-medium">
+                    <button id="tabStudentBtn" onclick="switchTab('student')" class="px-4 py-2 rounded-lg transition-all flex items-center space-x-2 bg-white text-brand-600 shadow-sm">
+                        <i class="fa-solid fa-cloud-arrow-up"></i>
+                        <span>Form Siswa</span>
+                    </button>
+                    <button id="tabTeacherBtn" onclick="switchTab('teacher')" class="px-4 py-2 rounded-lg transition-all flex items-center space-x-2 text-slate-600 hover:text-slate-900">
+                        <i class="fa-solid fa-list-check"></i>
+                        <span>Rekap Data Guru</span>
+                        <span id="badgeCount" class="bg-brand-100 text-brand-700 text-xs px-2 py-0.5 rounded-full font-bold ml-1">0</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- SECTION 1: FORM PENGUMPULAN SISWA -->
+        <section id="studentSection" class="max-w-2xl mx-auto transition-all duration-300">
+            
+            <div class="bg-white rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
+                <!-- Header Banner -->
+                <div class="bg-gradient-to-r from-brand-600 via-indigo-600 to-blue-700 p-6 sm:p-8 text-white relative overflow-hidden">
+                    <div class="relative z-10">
+                        <span class="bg-white/20 backdrop-blur-md text-white text-xs px-3 py-1 rounded-full font-medium tracking-wide uppercase">Form Resmi</span>
+                        <h2 class="text-2xl sm:text-3xl font-bold mt-2">Pengumpulan Hasil PH</h2>
+                        <p class="text-brand-100 text-sm mt-1">Silakan lengkapi data diri dan unggah hasil lembar Penilaian Harian Anda dalam format PDF.</p>
+                    </div>
+                    <!-- Background decorative circle -->
+                    <div class="absolute -right-8 -bottom-10 w-40 h-40 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
+                </div>
+
+                <!-- Form Body -->
+                <form id="uploadForm" onsubmit="handleFormSubmit(event)" class="p-6 sm:p-8 space-y-6">
+                    
+                    <!-- Input Nama Lengkap -->
+                    <div>
+                        <label for="studentName" class="block text-sm font-semibold text-slate-700 mb-1">
+                            Nama Lengkap Siswa <span class="text-rose-500">*</span>
+                        </label>
+                        <div class="relative rounded-xl shadow-sm">
+                            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                                <i class="fa-regular fa-user"></i>
+                            </div>
+                            <input type="text" id="studentName" required placeholder="Contoh: Ahmad Raihan Saputra" 
+                                class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 focus:bg-white text-slate-800 transition text-sm">
+                        </div>
+                    </div>
+
+                    <!-- Row: No Presensi & Kelas -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                        
+                        <!-- Input No Presensi -->
+                        <div>
+                            <label for="presenceNo" class="block text-sm font-semibold text-slate-700 mb-1">
+                                No. Presensi / Absen <span class="text-rose-500">*</span>
+                            </label>
+                            <div class="relative rounded-xl shadow-sm">
+                                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                                    <i class="fa-solid fa-hashtag"></i>
+                                </div>
+                                <input type="number" id="presenceNo" min="1" max="50" required placeholder="Contoh: 08" 
+                                    class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 focus:bg-white text-slate-800 transition text-sm">
+                            </div>
+                        </div>
+
+                        <!-- Input Kelas -->
+                        <div>
+                            <label for="studentClass" class="block text-sm font-semibold text-slate-700 mb-1">
+                                Kelas <span class="text-rose-500">*</span>
+                            </label>
+                            <div class="relative rounded-xl shadow-sm">
+                                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                                    <i class="fa-solid fa-graduation-cap"></i>
+                                </div>
+                                <select id="studentClass" required class="w-full pl-10 pr-8 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 focus:bg-white text-slate-800 transition text-sm appearance-none cursor-pointer">
+                                    <option value="" disabled selected>Pilih Kelas...</option>
+                                    <option value="VII H">Kelas VII H</option>
+                                    <option value="VII I">Kelas VII I</option>
+                                    <option value="VII J">Kelas VII J</option>
+                                    <option value="VII K">Kelas VII K</option>
+                                    <option value="VII L">Kelas VII L</option>
+                                    <option value="VII M">Kelas VII M</option>
+                                </select>
+                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400">
+                                    <i class="fa-solid fa-chevron-down text-xs"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Input Mata Pelajaran / Judul PH -->
+                    <div>
+                        <label for="subjectName" class="block text-sm font-semibold text-slate-700 mb-1">
+                            Materi / Topik PH <span class="text-rose-500">*</span>
+                        </label>
+                        <div class="relative rounded-xl shadow-sm">
+                            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                                <i class="fa-solid fa-book"></i>
+                            </div>
+                            <input type="text" id="subjectName" required placeholder="Contoh: IPA - Bab 2 Sistem Organisasi Kehidupan (PH 1)" 
+                                class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 focus:bg-white text-slate-800 transition text-sm">
+                        </div>
+                    </div>
+
+                    <!-- Upload File PDF Area -->
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">
+                            Berkas Hasil PH (Format PDF) <span class="text-rose-500">*</span>
+                        </label>
+                        
+                        <!-- Drag & Drop Container -->
+                        <div id="dropZone" 
+                             class="border-2 border-dashed border-slate-300 hover:border-brand-500 bg-slate-50/50 hover:bg-brand-50/30 rounded-2xl p-6 text-center transition-all cursor-pointer relative group">
+                            
+                            <input type="file" id="pdfFileInput" accept=".pdf,application/pdf" class="hidden" onchange="handleFileSelect(event)">
+                            
+                            <div id="dropZoneInitial" class="space-y-3">
+                                <div class="w-14 h-14 mx-auto rounded-2xl bg-brand-50 text-brand-600 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+                                    <i class="fa-solid fa-file-pdf"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-semibold text-slate-700">
+                                        Klik untuk memilih file <span class="font-normal text-slate-500">atau drag & drop di sini</span>
+                                    </p>
+                                    <p class="text-xs text-slate-400 mt-1">Hanya dokumen format .PDF (Maksimal 10 MB)</p>
+                                </div>
+                                <button type="button" onclick="document.getElementById('pdfFileInput').click()" class="px-4 py-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50">
+                                    Pilih Berkas PDF
+                                </button>
+                            </div>
+
+                            <!-- Selected File Details Area -->
+                            <div id="selectedFileDetails" class="hidden text-left bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center space-x-3 overflow-hidden">
+                                        <div class="w-10 h-10 rounded-lg bg-red-100 text-red-600 flex items-center justify-center flex-shrink-0 text-xl">
+                                            <i class="fa-solid fa-file-pdf"></i>
+                                        </div>
+                                        <div class="truncate">
+                                            <p id="fileName" class="text-sm font-semibold text-slate-800 truncate">document.pdf</p>
+                                            <p id="fileSize" class="text-xs text-slate-500">0 KB</p>
+                                        </div>
+                                    </div>
+                                    <button type="button" onclick="removeSelectedFile(event)" class="text-slate-400 hover:text-rose-600 p-2 rounded-lg hover:bg-rose-50 transition">
+                                        <i class="fa-solid fa-xmark text-lg"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <!-- Progress Bar Simulation (Hidden by default) -->
+                    <div id="uploadProgressContainer" class="hidden space-y-1">
+                        <div class="flex justify-between text-xs text-slate-600">
+                            <span>Mengunggah dokumen...</span>
+                            <span id="progressPercentage">0%</span>
+                        </div>
+                        <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                            <div id="progressBar" class="bg-brand-600 h-2 rounded-full transition-all duration-200" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" id="submitBtn" class="w-full py-3.5 px-6 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-xl shadow-lg shadow-brand-500/25 flex items-center justify-center space-x-2 transition-all transform active:scale-[0.99]">
+                        <i class="fa-solid fa-paper-plane"></i>
+                        <span>Kirim Hasil PH</span>
+                    </button>
+
+                </form>
+            </div>
+
+            <!-- Notice Footer -->
+            <p class="text-center text-xs text-slate-400 mt-6 flex items-center justify-center gap-1">
+                <i class="fa-solid fa-shield-halved"></i>
+                Data yang dikirimkan disimpan secara terenkripsi untuk kebutuhan rekap Penilaian Harian.
+            </p>
+        </section>
+
+
+        <!-- SECTION 2: DASHBOARD REKAP DATA (GURU VIEW) -->
+        <section id="teacherSection" class="hidden transition-all duration-300">
+            
+            <!-- Dashboard Overview Stats Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-6">
+                
+                <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Total Hasil Dikirim</p>
+                        <h3 id="statTotal" class="text-2xl font-bold text-slate-900 mt-1">0</h3>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-blue-50 text-brand-600 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-folder-closed"></i>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Jumlah Kelas Terdaftar</p>
+                        <h3 id="statClasses" class="text-2xl font-bold text-slate-900 mt-1">0</h3>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-users-rectangle"></i>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-medium text-slate-500 uppercase tracking-wider">Pengumpulan Hari Ini</p>
+                        <h3 id="statToday" class="text-2xl font-bold text-slate-900 mt-1">0</h3>
+                    </div>
+                    <div class="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-calendar-check"></i>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Filters & Actions Header -->
+            <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-4 sm:p-5 mb-6">
+                <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    
+                    <!-- Search input -->
+                    <div class="relative flex-1 max-w-md">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                        <input type="text" id="searchInput" oninput="renderSubmissions()" placeholder="Cari nama siswa atau no presensi..."
+                            class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 focus:bg-white transition">
+                    </div>
+
+                    <!-- Filters -->
+                    <div class="flex flex-wrap items-center gap-3">
+                        
+                        <!-- Filter Kelas -->
+                        <select id="filterClass" onchange="renderSubmissions()" class="bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-700 focus:ring-2 focus:ring-brand-500">
+                            <option value="ALL">Semua Kelas (VII H - VII M)</option>
+                            <option value="VII H">Kelas VII H</option>
+                            <option value="VII I">Kelas VII I</option>
+                            <option value="VII J">Kelas VII J</option>
+                            <option value="VII K">Kelas VII K</option>
+                            <option value="VII L">Kelas VII L</option>
+                            <option value="VII M">Kelas VII M</option>
+                        </select>
+
+                        <!-- Export CSV Button -->
+                        <button onclick="exportToCSV()" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold shadow-sm flex items-center space-x-2 transition">
+                            <i class="fa-solid fa-file-excel"></i>
+                            <span>Ekspor CSV</span>
+                        </button>
+
+                        <!-- Clear All Data Button -->
+                        <button onclick="resetMockData()" class="px-3 py-2.5 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl text-sm font-medium transition" title="Reset Data Pengujian">
+                            <i class="fa-solid fa-rotate-right"></i>
+                        </button>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submissions Data Table -->
+            <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50/80 border-b border-slate-200 text-xs uppercase font-semibold text-slate-500 tracking-wider">
+                                <th class="py-4 px-6">No. Presensi</th>
+                                <th class="py-4 px-6">Nama Siswa</th>
+                                <th class="py-4 px-6">Kelas</th>
+                                <th class="py-4 px-6">Mata Pelajaran / PH</th>
+                                <th class="py-4 px-6">Waktu Pengumpulan</th>
+                                <th class="py-4 px-6 text-center">Berkas PDF</th>
+                                <th class="py-4 px-6 text-right">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="submissionTableBody" class="divide-y divide-slate-100 text-sm">
+                            <!-- Rows dynamically populated via JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Empty State -->
+                <div id="emptyState" class="hidden py-12 text-center">
+                    <div class="w-16 h-16 mx-auto bg-slate-100 text-slate-400 rounded-full flex items-center justify-center text-2xl mb-3">
+                        <i class="fa-solid fa-inbox"></i>
+                    </div>
+                    <h4 class="text-base font-semibold text-slate-700">Belum ada pengumpulan</h4>
+                    <p class="text-xs text-slate-400 mt-1">Data pengumpulan siswa akan otomatis terdaftar di sini.</p>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Modal Preview PDF -->
+    <div id="pdfModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl h-[85vh] flex flex-col overflow-hidden border border-slate-200">
+            <!-- Modal Header -->
+            <div class="px-6 py-4 bg-slate-900 text-white flex justify-between items-center">
+                <div class="flex items-center space-x-3 overflow-hidden">
+                    <i class="fa-solid fa-file-pdf text-red-400 text-xl"></i>
+                    <div class="truncate">
+                        <h3 id="modalTitle" class="font-semibold text-sm truncate">Preview Dokumen PH</h3>
+                        <p id="modalSubtitle" class="text-xs text-slate-400 truncate">Hasil_PH.pdf</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <a id="modalDownloadBtn" href="#" download class="px-3 py-1.5 bg-brand-600 hover:bg-brand-500 text-white rounded-lg text-xs font-semibold flex items-center space-x-1.5 transition">
+                        <i class="fa-solid fa-download"></i>
+                        <span>Unduh</span>
+                    </a>
+                    <button onclick="closePdfModal()" class="text-slate-400 hover:text-white p-2 rounded-lg hover:bg-slate-800 transition">
+                        <i class="fa-solid fa-xmark text-lg"></i>
+                    </button>
+                </div>
+            </div>
+            <!-- Modal Body (PDF Frame / Object) -->
+            <div class="flex-grow bg-slate-100 relative">
+                <iframe id="pdfFrame" class="w-full h-full border-none" src=""></iframe>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global Array to store submission data (Initial mock data for teacher view demonstration)
+        let submissions = [
+            {
+                id: 'SUB-101',
+                name: 'Ahmad Raihan',
+                presenceNo: '03',
+                class: 'VII H',
+                subject: 'IPA - Bab 2 Sistem Organisasi Kehidupan',
+                timestamp: '2026-10-07 08:15',
+                fileName: 'Hasil_PH1_IPA_Ahmad.pdf',
+                fileSize: '1.2 MB',
+                fileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf'
+            },
+            {
+                id: 'SUB-102',
+                name: 'Siti Nurhaliza',
+                presenceNo: '28',
+                class: 'VII I',
+                subject: 'Matematika - Bab 3 Persamaan Linear',
+                timestamp: '2026-10-07 08:42',
+                fileName: 'Hasil_PH_MTK_Siti.pdf',
+                fileSize: '850 KB',
+                fileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf'
+            },
+            {
+                id: 'SUB-103',
+                name: 'Budi Santoso',
+                presenceNo: '07',
+                class: 'VII M',
+                subject: 'Bahasa Indonesia - Teks Laporan Hasil Observasi',
+                timestamp: '2026-10-06 14:10',
+                fileName: 'Budi_BIndo_PH1.pdf',
+                fileSize: '2.1 MB',
+                fileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf'
+            }
+        ];
+
+        let selectedFileObj = null;
+
+        // Initialize App
+        document.addEventListener("DOMContentLoaded", () => {
+            // Load saved data if available in localStorage
+            const savedData = localStorage.getItem("ph_submissions");
+            if (savedData) {
+                try {
+                    submissions = JSON.parse(savedData);
+                } catch(e) { console.error("Error parsing stored submissions", e); }
+            }
+            updateBadgeCount();
+            setupDragAndDrop();
+        });
+
+        // Save data to localStorage
+        function saveState() {
+            localStorage.setItem("ph_submissions", JSON.stringify(submissions));
+            updateBadgeCount();
+        }
+
+        function updateBadgeCount() {
+            document.getElementById('badgeCount').innerText = submissions.length;
+        }
+
+        // View Tab Switching (Siswa vs Guru)
+        function switchTab(tab) {
+            const studentSection = document.getElementById('studentSection');
+            const teacherSection = document.getElementById('teacherSection');
+            const tabStudentBtn = document.getElementById('tabStudentBtn');
+            const tabTeacherBtn = document.getElementById('tabTeacherBtn');
+
+            if (tab === 'student') {
+                studentSection.classList.remove('hidden');
+                teacherSection.classList.add('hidden');
+                
+                tabStudentBtn.className = "px-4 py-2 rounded-lg transition-all flex items-center space-x-2 bg-white text-brand-600 shadow-sm font-semibold";
+                tabTeacherBtn.className = "px-4 py-2 rounded-lg transition-all flex items-center space-x-2 text-slate-600 hover:text-slate-900 font-medium";
+            } else {
+                studentSection.classList.add('hidden');
+                teacherSection.classList.remove('hidden');
+
+                tabTeacherBtn.className = "px-4 py-2 rounded-lg transition-all flex items-center space-x-2 bg-white text-brand-600 shadow-sm font-semibold";
+                tabStudentBtn.className = "px-4 py-2 rounded-lg transition-all flex items-center space-x-2 text-slate-600 hover:text-slate-900 font-medium";
+                
+                renderSubmissions();
+            }
+        }
+
+        // Setup Drag & Drop File Upload Area
+        function setupDragAndDrop() {
+            const dropZone = document.getElementById('dropZone');
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dropZone.classList.add('drag-active');
+                }, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dropZone.classList.remove('drag-active');
+                }, false);
+            });
+
+            dropZone.addEventListener('drop', (e) => {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                if (files && files.length > 0) {
+                    processSelectedFile(files[0]);
+                }
+            });
+        }
+
+        function handleFileSelect(e) {
+            const files = e.target.files;
+            if (files && files.length > 0) {
+                processSelectedFile(files[0]);
+            }
+        }
+
+        function processSelectedFile(file) {
+            // Check file type
+            if (file.type !== 'application/pdf' && !file.name.endsWith('.pdf')) {
+                showToast('Hanya berkas format .PDF yang diperbolehkan!', 'error');
+                return;
+            }
+
+            // Check file size (limit 10MB)
+            const maxSizeInBytes = 10 * 1024 * 1024;
+            if (file.size > maxSizeInBytes) {
+                showToast('Ukuran berkas melebihi batas maksimum 10 MB!', 'error');
+                return;
+            }
+
+            selectedFileObj = file;
+            
+            // Format file size display
+            let formattedSize = (file.size / 1024).toFixed(1) + ' KB';
+            if (file.size > 1024 * 1024) {
+                formattedSize = (file.size / (1024 * 1024)).toFixed(2) + ' MB';
+            }
+
+            document.getElementById('fileName').innerText = file.name;
+            document.getElementById('fileSize').innerText = formattedSize;
+
+            document.getElementById('dropZoneInitial').classList.add('hidden');
+            document.getElementById('selectedFileDetails').classList.remove('hidden');
+        }
+
+        function removeSelectedFile(e) {
+            if (e) e.stopPropagation();
+            selectedFileObj = null;
+            document.getElementById('pdfFileInput').value = '';
+            document.getElementById('selectedFileDetails').classList.add('hidden');
+            document.getElementById('dropZoneInitial').classList.remove('hidden');
+        }
+
+        // Form Submit Handler
+        function handleFormSubmit(e) {
+            e.preventDefault();
+
+            if (!selectedFileObj) {
+                showToast('Silakan pilih berkas PDF hasil PH terlebih dahulu!', 'warning');
+                return;
+            }
+
+            const name = document.getElementById('studentName').value.trim();
+            const presenceNo = document.getElementById('presenceNo').value.toString().padStart(2, '0');
+            const studentClass = document.getElementById('studentClass').value;
+            const subject = document.getElementById('subjectName').value.trim();
+
+            const progressContainer = document.getElementById('uploadProgressContainer');
+            const progressBar = document.getElementById('progressBar');
+            const progressPercentage = document.getElementById('progressPercentage');
+            const submitBtn = document.getElementById('submitBtn');
+
+            // Disable submit button & show progress bar
+            submitBtn.disabled = true;
+            submitBtn.classList.add('opacity-75', 'cursor-not-allowed');
+            progressContainer.classList.remove('hidden');
+
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += 15;
+                if (progress > 100) progress = 100;
+
+                progressBar.style.width = progress + '%';
+                progressPercentage.innerText = progress + '%';
+
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    
+                    // Create Object URL for viewing/downloading in this session
+                    const fileBlobUrl = URL.createObjectURL(selectedFileObj);
+
+                    // Formats current timestamp
+                    const now = new Date();
+                    const formattedDate = now.toISOString().split('T')[0] + ' ' + 
+                        now.getHours().toString().padStart(2, '0') + ':' + 
+                        now.getMinutes().toString().padStart(2, '0');
+
+                    // Format file size
+                    let sizeStr = (selectedFileObj.size / 1024).toFixed(1) + ' KB';
+                    if (selectedFileObj.size > 1024 * 1024) {
+                        sizeStr = (selectedFileObj.size / (1024 * 1024)).toFixed(2) + ' MB';
+                    }
+
+                    // Save new submission record
+                    const newSubmission = {
+                        id: 'SUB-' + Math.floor(100 + Math.random() * 900),
+                        name: name,
+                        presenceNo: presenceNo,
+                        class: studentClass,
+                        subject: subject,
+                        timestamp: formattedDate,
+                        fileName: selectedFileObj.name,
+                        fileSize: sizeStr,
+                        fileUrl: fileBlobUrl
+                    };
+
+                    submissions.unshift(newSubmission);
+                    saveState();
+
+                    // Reset Form UI
+                    setTimeout(() => {
+                        progressContainer.classList.add('hidden');
+                        progressBar.style.width = '0%';
+                        submitBtn.disabled = false;
+                        submitBtn.classList.remove('opacity-75', 'cursor-not-allowed');
+                        
+                        document.getElementById('uploadForm').reset();
+                        removeSelectedFile();
+
+                        showToast('Hasil PH berhasil terkirim dan tersimpan!', 'success');
+                    }, 400);
+                }
+            }, 100);
+        }
+
+        // Render Teacher Dashboard Submissions Table
+        function renderSubmissions() {
+            const tableBody = document.getElementById('submissionTableBody');
+            const emptyState = document.getElementById('emptyState');
+            const searchVal = document.getElementById('searchInput').value.toLowerCase();
+            const classVal = document.getElementById('filterClass').value;
+
+            // Filter logic
+            const filtered = submissions.filter(sub => {
+                const matchesSearch = sub.name.toLowerCase().includes(searchVal) || 
+                                      sub.presenceNo.includes(searchVal) ||
+                                      sub.subject.toLowerCase().includes(searchVal);
+                const matchesClass = (classVal === 'ALL') || (sub.class === classVal);
+                return matchesSearch && matchesClass;
+            });
+
+            // Update Statistics Cards
+            document.getElementById('statTotal').innerText = submissions.length;
+            
+            const uniqueClasses = new Set(submissions.map(s => s.class));
+            document.getElementById('statClasses').innerText = uniqueClasses.size;
+
+            const todayStr = new Date().toISOString().split('T')[0];
+            const todayCount = submissions.filter(s => s.timestamp.startsWith(todayStr)).length;
+            document.getElementById('statToday').innerText = todayCount;
+
+            tableBody.innerHTML = '';
+
+            if (filtered.length === 0) {
+                emptyState.classList.remove('hidden');
+                return;
+            } else {
+                emptyState.classList.add('hidden');
+            }
+
+            filtered.forEach(sub => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50/80 transition-colors";
+
+                tr.innerHTML = `
+                    <td class="py-4 px-6 font-semibold text-slate-700">
+                        <span class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 text-slate-800 text-xs font-bold">
+                            ${sub.presenceNo}
+                        </span>
+                    </td>
+                    <td class="py-4 px-6">
+                        <div class="font-semibold text-slate-900">${escapeHtml(sub.name)}</div>
+                        <div class="text-xs text-slate-400">ID: ${sub.id}</div>
+                    </td>
+                    <td class="py-4 px-6">
+                        <span class="px-2.5 py-1 bg-brand-50 text-brand-700 font-medium text-xs rounded-md border border-brand-100">
+                            ${escapeHtml(sub.class)}
+                        </span>
+                    </td>
+                    <td class="py-4 px-6 text-slate-700 font-medium">
+                        ${escapeHtml(sub.subject)}
+                    </td>
+                    <td class="py-4 px-6 text-slate-500 text-xs">
+                        <i class="fa-regular fa-clock mr-1 text-slate-400"></i>${sub.timestamp}
+                    </td>
+                    <td class="py-4 px-6 text-center">
+                        <button onclick="previewPdf('${sub.fileUrl}', '${escapeHtml(sub.fileName)}', '${escapeHtml(sub.name)}')" 
+                                class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium transition">
+                            <i class="fa-solid fa-file-pdf text-red-500"></i>
+                            <span class="truncate max-w-[100px]">${escapeHtml(sub.fileName)}</span>
+                        </button>
+                    </td>
+                    <td class="py-4 px-6 text-right">
+                        <div class="flex items-center justify-end space-x-2">
+                            <button onclick="previewPdf('${sub.fileUrl}', '${escapeHtml(sub.fileName)}', '${escapeHtml(sub.name)}')" 
+                                    class="p-2 text-slate-500 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition" title="Lihat PDF">
+                                <i class="fa-solid fa-eye"></i>
+                            </button>
+                            <button onclick="deleteSubmission('${sub.id}')" 
+                                    class="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition" title="Hapus Record">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+
+                tableBody.appendChild(tr);
+            });
+        }
+
+        // Preview PDF Modal Controller
+        function previewPdf(url, fileName, studentName) {
+            document.getElementById('modalTitle').innerText = 'Hasil PH - ' + studentName;
+            document.getElementById('modalSubtitle').innerText = fileName;
+            
+            const pdfFrame = document.getElementById('pdfFrame');
+            pdfFrame.src = url;
+
+            const modalDownloadBtn = document.getElementById('modalDownloadBtn');
+            modalDownloadBtn.href = url;
+            modalDownloadBtn.download = fileName;
+
+            document.getElementById('pdfModal').classList.remove('hidden');
+        }
+
+        function closePdfModal() {
+            document.getElementById('pdfModal').classList.add('hidden');
+            document.getElementById('pdfFrame').src = '';
+        }
+
+        // Delete Submission
+        function deleteSubmission(id) {
+            submissions = submissions.filter(s => s.id !== id);
+            saveState();
+            renderSubmissions();
+            showToast('Data pengumpulan berhasil dihapus', 'info');
+        }
+
+        // Export Table Data to CSV
+        function exportToCSV() {
+            if (submissions.length === 0) {
+                showToast('Tidak ada data untuk diekspor!', 'warning');
+                return;
+            }
+
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "ID,No Presensi,Nama Siswa,Kelas,Mata Pelajaran,Waktu Pengumpulan,Nama File\n";
+
+            submissions.forEach(s => {
+                const row = [
+                    `"${s.id}"`,
+                    `"${s.presenceNo}"`,
+                    `"${s.name.replace(/"/g, '""')}"`,
+                    `"${s.class}"`,
+                    `"${s.subject.replace(/"/g, '""')}"`,
+                    `"${s.timestamp}"`,
+                    `"${s.fileName.replace(/"/g, '""')}"`
+                ].join(",");
+                csvContent += row + "\n";
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `Rekap_Hasil_PH_${new Date().toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            showToast('Rekap data berhasil diunduh sebagai CSV!', 'success');
+        }
+
+        // Reset to initial demo data
+        function resetMockData() {
+            localStorage.removeItem("ph_submissions");
+            location.reload();
+        }
+
+        // Custom Toast Notification System
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            
+            let bgClass = 'bg-slate-900 text-white';
+            let icon = 'fa-check-circle text-emerald-400';
+
+            if (type === 'error') {
+                bgClass = 'bg-rose-900 text-white';
+                icon = 'fa-circle-xmark text-rose-300';
+            } else if (type === 'warning') {
+                bgClass = 'bg-amber-900 text-white';
+                icon = 'fa-triangle-exclamation text-amber-300';
+            } else if (type === 'info') {
+                bgClass = 'bg-slate-800 text-white';
+                icon = 'fa-circle-info text-blue-400';
+            }
+
+            toast.className = `${bgClass} shadow-xl rounded-xl px-4 py-3 text-sm font-medium flex items-center space-x-3 pointer-events-auto transform translate-y-4 opacity-0 transition-all duration-300 border border-white/10`;
+            toast.innerHTML = `
+                <i class="fa-solid ${icon} text-lg"></i>
+                <span>${escapeHtml(message)}</span>
+            `;
+
+            container.appendChild(toast);
+
+            // Animate in
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-y-4', 'opacity-0');
+            });
+
+            // Auto dismiss after 3 seconds
+            setTimeout(() => {
+                toast.classList.add('translate-y-4', 'opacity-0');
+                setTimeout(() => {
+                    toast.remove();
+                }, 300);
+            }, 3200);
+        }
+
+        // Helper to escape HTML characters
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>
